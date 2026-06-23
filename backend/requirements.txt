@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+celery
+redis
+pydantic
+pydantic-settings
+boto3
+GitPython
+google-genai
+langgraph
+langchain-google-genai
+python-multipart
