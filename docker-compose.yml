@@ -1,13 +1,4 @@
-version: '3.8'
-
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
   backend:
     build:
       context: ./backend
@@ -17,37 +8,14 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - /tmp/jobs:/tmp/jobs # Map a local temp dir for cloning
+      - ./jobs_data:/app/jobs_data
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - GEMINI_API_KEY=${GEMINI_API_KEY:-placeholder}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.8-flash}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-placeholder}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-placeholder}
       - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ai-agent-docs-bucket}
-    depends_on:
-      - redis
-
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A tasks.celery_app worker --loglevel=info
-    volumes:
-      - ./backend:/app
-      - /tmp/jobs:/tmp/jobs # Share the same temp dir
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-placeholder}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-placeholder}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-placeholder}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-ai-agent-docs-bucket}
-    depends_on:
-      - redis
-      - backend
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-auto-documenter-bundles}
 
   frontend:
     build:
@@ -59,9 +27,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_API_BASE_URL=http://backend:8000
     depends_on:
       - backend
-
-volumes:
-  redis_data:
