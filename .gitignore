@@ -1,4 +1,4 @@
-# Environment variables
+﻿# Environment
 .env
 .env.local
 .env.*.local
@@ -6,14 +6,14 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 *.so
 venv/
 env/
 .venv/
 .pytest_cache/
 
-# Node / Frontend
+# Node / Vite
 node_modules/
 dist/
 build/
@@ -21,14 +21,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Runtime job artifacts
+# Runtime artifacts
 /tmp/jobs/
 jobs_data/
 storage/
 *_docs/
 *.zip
 
-# IDE & OS files
+# Editor & OS
 .vscode/
 .idea/
 .DS_Store
