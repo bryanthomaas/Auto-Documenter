@@ -1,47 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <!-- Ocean Abyss Gradient -->
-    <linearGradient id="oceanBg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#061325"/>
-      <stop offset="60%" stop-color="#0a1f3d"/>
-      <stop offset="100%" stop-color="#02040a"/>
-    </linearGradient>
-
-    <!-- Royal to Cerulean Ribbon -->
-    <linearGradient id="coreRibbon" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="45%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#1d4ed8"/>
-    </linearGradient>
-
-    <!-- Liquid Silver Metallic Edge -->
-    <linearGradient id="silverSheen" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="30%" stop-color="#cbd5e1"/>
-      <stop offset="70%" stop-color="#64748b"/>
-      <stop offset="100%" stop-color="#f1f5f9"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Squircle Base Container -->
-  <rect x="3" y="3" width="58" height="58" rx="16" fill="url(#oceanBg)" stroke="url(#silverSheen)" stroke-width="2"/>
-
-  <!-- Subtle Inner Depth Ring -->
-  <rect x="7" y="7" width="50" height="50" rx="12" stroke="#38bdf8" stroke-opacity="0.25" stroke-width="1"/>
-
-  <!-- Layer 1: Sunken Document Plate -->
-  <path d="M20 18H38L46 26V46H20V18Z" fill="#0a1f3d" fill-opacity="0.8" stroke="url(#silverSheen)" stroke-width="1.2"/>
-  
-  <!-- Layer 2: Folded Corner -->
-  <path d="M38 18V26H46" stroke="url(#silverSheen)" stroke-width="1.2" fill="#1d4ed8" fill-opacity="0.5"/>
-
-  <!-- Layer 3: Code Bracket Chevron < -->
-  <path d="M27 34L23 37L27 40" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Layer 4: Code Bracket Chevron > -->
-  <path d="M39 34L43 37L39 40" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Central Specular Silver Star Nexus -->
-  <path d="M33 30L34.2 35.8L40 37L34.2 38.2L33 44L31.8 38.2L26 37L31.8 35.8Z" fill="#ffffff"/>
-  <circle cx="33" cy="37" r="1.5" fill="#38bdf8"/>
+  <rect x="3" y="3" width="58" height="58" rx="14" fill="#012487" stroke="#FEFDFE" stroke-opacity="0.3" stroke-width="2"/>
+  <path d="M20 18H38L46 26V46H20V18Z" fill="#013CD3" stroke="#FEFDFE" stroke-width="1.5"/>
+  <path d="M38 18V26H46" fill="#C7FC02" stroke="#FEFDFE" stroke-width="1.5"/>
+  <path d="M27 34L23 37L27 40" stroke="#C7FC02" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M39 34L43 37L39 40" stroke="#C7FC02" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M35 32L31 42" stroke="#FEFDFE" stroke-width="2" stroke-linecap="round"/>
 </svg>
