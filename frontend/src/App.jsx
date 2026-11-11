@@ -1,176 +1,272 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Github, Rocket, Loader2, CheckCircle2, AlertCircle, Download } from 'lucide-react';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
+import HeroInput from './components/landing/HeroInput';
+import LandingPage from './components/landing/LandingPage';
+import LiveProgress from './components/progress/LiveProgress';
+import DocsWorkspace from './components/workspace/DocsWorkspace';
+import OceanBackground from './components/common/OceanBackground';
 
-function App() {
-  const [repoUrl, setRepoUrl] = useState('');
+gsap.registerPlugin(useGSAP);
+
+export default function App() {
+  const [viewState, setViewState] = useState('IDLE'); // 'IDLE' | 'PROCESSING' | 'WORKSPACE'
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobId, setJobId] = useState(null);
-  const [status, setStatus] = useState('IDLE'); // IDLE, QUEUED, PROCESSING, COMPLETED, FAILED
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('IDLE');
   const [progress, setProgress] = useState(0);
-  const [downloadUrl, setDownloadUrl] = useState(null);
+  const [message, setMessage] = useState('');
   const [error, setError] = useState(null);
+  const [downloadUrl, setDownloadUrl] = useState(null);
+  const [docs, setDocs] = useState(null);
 
-  const isValidGithubUrl = (url) => {
-    return /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+(\/)?$/.test(url);
+  const eventSourceRef = useRef(null);
+  const viewContainerRef = useRef(null);
+
+  const transitionTo = (nextState, callback) => {
+    const prefersReducedMotion = typeof window !== 'undefined' && 
+      window.matchMedia && 
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (window.__lenis) {
+      window.__lenis.scrollTo(0, { immediate: false });
+    } else if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (viewContainerRef.current && !prefersReducedMotion) {
+      gsap.to(viewContainerRef.current, {
+        autoAlpha: 0,
+        y: -15,
+        scale: 0.98,
+        duration: 0.35,
+        ease: 'power2.in',
+        onComplete: () => {
+          if (callback) callback();
+          setViewState(nextState);
+        }
+      });
+    } else {
+      if (callback) callback();
+      setViewState(nextState);
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    
-    if (!isValidGithubUrl(repoUrl)) {
-      setError("Please enter a valid public GitHub repository URL.");
-      return;
+  // Lenis Smooth Scroll Integration with GSAP Ticker Synchronization
+  useEffect(() => {
+    const prefersReducedMotion = typeof window !== 'undefined' && 
+      window.matchMedia && 
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) return;
+
+    const lenis = new Lenis({
+      smoothWheel: true,
+      smoothTouch: false,
+    });
+
+    window.__lenis = lenis;
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
     }
+    const rafId = requestAnimationFrame(raf);
+
+    const tickerUpdate = (time) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tickerUpdate);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      gsap.ticker.remove(tickerUpdate);
+      lenis.destroy();
+      window.__lenis = null;
+    };
+  }, []);
+
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+    mm.add({
+      isNormal: "(prefers-reduced-motion: no-preference)",
+      isReduced: "(prefers-reduced-motion: reduce)"
+    }, (context) => {
+      const { isReduced } = context.conditions;
+      if (isReduced) {
+        if (viewContainerRef.current) {
+          gsap.set(viewContainerRef.current, { autoAlpha: 1, y: 0, scale: 1 });
+        }
+        return;
+      }
+      if (viewContainerRef.current) {
+        gsap.fromTo(
+          viewContainerRef.current,
+          { autoAlpha: 0, y: 20, scale: 0.98 },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'power2.out', clearProps: 'transform' }
+        );
+      }
+    });
+  }, { scope: viewContainerRef, dependencies: [viewState] });
+
+  const startJob = async ({ repoUrl, depth, apiKey }) => {
+    setError(null);
+    setIsSubmitting(true);
+    let jobFailed = false;
+
+    transitionTo('PROCESSING', () => {
+      setViewState('PROCESSING');
+      if (!jobFailed) {
+        setStatus('QUEUED');
+        setProgress(5);
+        setMessage('Submitting repository for analysis...');
+      }
+    });
 
     try {
-      setStatus('QUEUED');
-      setMessage('Submitting job...');
-      const response = await axios.post('/api/job', { repo_url: repoUrl });
-      setJobId(response.data.job_id);
+      const response = await axios.post('/api/job', {
+        repo_url: repoUrl,
+        depth: depth,
+        api_key: apiKey || null
+      });
+
+      const newJobId = response.data.job_id;
+      setJobId(newJobId);
+      connectEventStream(newJobId);
     } catch (err) {
+      jobFailed = true;
       setStatus('FAILED');
-      setError(err.response?.data?.detail || "Failed to start job. Please try again.");
+      setError(err.response?.data?.detail || 'Failed to submit repository. Please verify the URL and backend server.');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const connectEventStream = (id) => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    const eventSource = new EventSource(`/api/job/${id}/events`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setStatus(data.status);
+        setProgress(data.progress || 0);
+        setMessage(data.message || '');
+
+        if (data.download_url) {
+          setDownloadUrl(data.download_url);
+        }
+
+        if (data.docs) {
+          setDocs(data.docs);
+        }
+
+        if (data.status === 'COMPLETED' && data.docs) {
+          eventSource.close();
+          setProgress(100);
+          setMessage('Documentation generated successfully! Preparing workspace...');
+          setTimeout(() => {
+            transitionTo('WORKSPACE', () => {
+              setViewState('WORKSPACE');
+            });
+          }, 800);
+        } else if (data.status === 'FAILED') {
+          eventSource.close();
+          setError(data.error || data.message || 'Generation failed.');
+        }
+      } catch (e) {
+        console.error('Failed to parse SSE payload', e);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.warn('SSE connection closed or lost. Polling once.', err);
+      axios.get(`/api/job/${id}`)
+        .then(res => {
+          if (res.data.status === 'COMPLETED' && res.data.docs) {
+            setDocs(res.data.docs);
+            if (res.data.download_url) setDownloadUrl(res.data.download_url);
+            transitionTo('WORKSPACE', () => {
+              setViewState('WORKSPACE');
+            });
+            eventSource.close();
+          } else if (res.data.status === 'FAILED') {
+            setStatus('FAILED');
+            setError(res.data.error || 'Generation failed.');
+            eventSource.close();
+          }
+        })
+        .catch(() => {});
+    };
+  };
+
+  const handleReset = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    transitionTo('IDLE', () => {
+      setViewState('IDLE');
+      setJobId(null);
+      setStatus('IDLE');
+      setProgress(0);
+      setMessage('');
+      setError(null);
+      setDownloadUrl(null);
+      setDocs(null);
+    });
   };
 
   useEffect(() => {
-    let interval;
-    if (jobId && ['QUEUED', 'PROCESSING'].includes(status)) {
-      interval = setInterval(async () => {
-        try {
-          const res = await axios.get(`/api/job/${jobId}`);
-          const data = res.data;
-          setStatus(data.status);
-          setMessage(data.message);
-          setProgress(data.progress || 0);
-          if (data.download_url) {
-            setDownloadUrl(data.download_url);
-          }
-        } catch (err) {
-          console.error("Error polling status", err);
-        }
-      }, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [jobId, status]);
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
 
   return (
-    <div className="flex-1 flex flex-col justify-center items-center p-6 relative overflow-hidden">
-      {/* Background Starfield (Simplified CSS representation via backdrop and radial gradient in css) */}
-      
-      <div className="z-10 w-full max-w-3xl flex flex-col items-center">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-neon-blue bg-opacity-20 mb-4 animate-pulse-ring">
-            <Rocket className="w-8 h-8 text-neon-blue" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-starlight to-neon-blue">
-            Autonomous Codebase Documenter
-          </h1>
-          <p className="text-lg text-starlight opacity-80 max-w-2xl mx-auto">
-            Input a public GitHub repository and let the system map, analyze, and generate comprehensive documentation autonomously.
-          </p>
-        </div>
-
-        {status === 'IDLE' && (
-          <form onSubmit={handleSubmit} className="w-full glass-panel p-6 md:p-8 flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Github className="w-5 h-5 text-gray-400" />
-              </div>
-              <input
-                type="url"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://github.com/username/repository"
-                className="w-full pl-12 pr-4 py-4 bg-deep-space bg-opacity-50 border border-gray-700 rounded-lg focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue text-white placeholder-gray-500 transition-colors"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="glow-btn px-8 py-4 rounded-lg flex items-center justify-center gap-2"
-            >
-              <span>Generate Docs</span>
-            </button>
-          </form>
-        )}
-
-        {error && status !== 'FAILED' && (
-          <div className="mt-4 p-4 glass-panel border-red-500/50 bg-red-500/10 text-red-200 flex items-center gap-3 w-full">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p>{error}</p>
-          </div>
-        )}
-
-        {(status === 'QUEUED' || status === 'PROCESSING') && (
-          <div className="w-full glass-panel p-8 flex flex-col items-center">
-            <div className="relative w-20 h-20 mb-6">
-              <svg className="w-full h-full animate-spin text-neon-blue" viewBox="0 0 100 100">
-                <circle className="opacity-20" cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" fill="none" />
-                <circle className="opacity-100" cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="8" fill="none" strokeDasharray="283" strokeDashoffset={283 - (283 * progress) / 100} strokeLinecap="round" />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold">
-                {progress}%
-              </div>
-            </div>
-            <h3 className="text-xl font-medium mb-2 flex items-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Processing Job
-            </h3>
-            <p className="text-starlight opacity-80 text-center">{message}</p>
-          </div>
-        )}
-
-        {status === 'COMPLETED' && (
-          <div className="w-full glass-panel p-8 flex flex-col items-center border-green-500/30">
-            <div className="p-4 rounded-full bg-green-500/20 mb-6">
-              <CheckCircle2 className="w-12 h-12 text-green-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">Documentation Ready!</h3>
-            <p className="text-starlight opacity-80 mb-8 text-center">{message}</p>
-            {downloadUrl && (
-              <a
-                href={downloadUrl}
-                download
-                className="glow-btn px-8 py-4 rounded-lg flex items-center gap-2 border border-neon-blue/30"
-              >
-                <Download className="w-5 h-5" />
-                <span>Download Documentation (.zip)</span>
-              </a>
+    <div className="min-h-screen flex flex-col justify-between overflow-x-clip relative">
+      <OceanBackground />
+      <div ref={viewContainerRef} className="flex-1 flex flex-col w-full relative z-10">
+        {/* View State: Interactive Documentation Workspace */}
+        {viewState === 'WORKSPACE' && docs ? (
+          <DocsWorkspace
+            docs={docs}
+            downloadUrl={downloadUrl}
+            onReset={handleReset}
+          />
+        ) : (
+          /* View State: Landing & Live Generation Progress */
+          <div className="flex-1 flex flex-col justify-center items-center px-4 py-6 md:py-8 max-w-7xl mx-auto w-full">
+            {viewState === 'IDLE' && (
+              <LandingPage onSubmit={startJob} loading={isSubmitting} />
             )}
-            <button 
-              onClick={() => { setStatus('IDLE'); setRepoUrl(''); setJobId(null); setProgress(0); }}
-              className="mt-6 text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Analyze another repository
-            </button>
-          </div>
-        )}
 
-        {status === 'FAILED' && (
-          <div className="w-full glass-panel p-8 flex flex-col items-center border-red-500/30">
-            <div className="p-4 rounded-full bg-red-500/20 mb-6">
-              <AlertCircle className="w-12 h-12 text-red-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">Analysis Failed</h3>
-            <p className="text-starlight opacity-80 mb-6 text-center text-red-200">{error || message}</p>
-            <button 
-              onClick={() => { setStatus('IDLE'); setJobId(null); setProgress(0); setError(null); }}
-              className="px-6 py-3 rounded-lg border border-gray-600 hover:bg-gray-800 transition-colors"
-            >
-              Try Again
-            </button>
+            {viewState === 'PROCESSING' && (
+              <LiveProgress
+                status={status}
+                progress={progress}
+                message={message}
+                error={error}
+                onRetry={handleReset}
+              />
+            )}
+
+            <footer className="mt-10 text-center text-xs text-[#B2C6FA] font-sans">
+              <p>Autonomous Codebase Documenter</p>
+            </footer>
           </div>
         )}
       </div>
-
-      <footer className="mt-auto pt-10 pb-4 text-center text-sm text-gray-500">
-        Built by Bryan Thomas
-      </footer>
     </div>
   );
 }
-
-export default App;

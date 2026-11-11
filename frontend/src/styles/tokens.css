@@ -1,0 +1,74 @@
+/* Design System Tokens
+ * Palette: Ultramarine Cobalt (#013CD3), Ivory Foreground (#FEFDFE), Volt Accent (#C7FC02)
+ * Typography: Fraunces (Display/Headings) + Familjen Grotesk (Body)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  /* =========================================================================
+   * 1. ULTRAMARINE COBALT RAMP (#013CD3 BASE)
+   * ========================================================================= */
+  --ocean-abyss: 1 60 211;          /* #013CD3 - Primary Background */
+  --ocean-trench: 1 46 168;         /* #012EA8 - Recessed Header / Sidebar */
+  --ocean-deep: 1 36 135;           /* #012487 - Deep Input & Code Well */
+  --ocean-surface: 1 52 186;        /* #0134BA - Raised Surface */
+  --ocean-card: 1 44 162;           /* #012CA2 - Card Surface */
+  --ocean-card-hover: 2 54 194;     /* #0236C2 - Card Hover Step */
+
+  --ocean-navy: 1 60 211;
+  --ocean-cobalt: 1 46 168;
+  --ocean-midnight: 1 36 135;
+
+  /* =========================================================================
+   * 2. VOLT ACCENT (#C7FC02) & COBALT TOKENS
+   * ========================================================================= */
+  --royal-blue: 1 60 211;           /* #013CD3 */
+  --royal-blue-light: 199 252 2;    /* #C7FC02 - Volt Accent */
+  --ocean-cyan: 199 252 2;          /* #C7FC02 - Volt Accent */
+  --cerulean-vibrant: 1 60 211;     /* #013CD3 */
+  --cerulean-light: 199 252 2;      /* #C7FC02 - Volt Accent */
+
+  /* Volt Accent Roles */
+  --cantaloupe: 199 252 2;          /* #C7FC02 */
+  --cantaloupe-light: 212 255 51;   /* #D4FF33 */
+  --cantaloupe-dark: 168 214 0;     /* #A8D600 */
+
+  /* =========================================================================
+   * 3. FOREGROUND TEXT ROLES (#FEFDFE PRIMARY)
+   * ========================================================================= */
+  --silver-bright: 254 253 254;     /* #FEFDFE - Primary Foreground */
+  --silver-base: 228 235 254;       /* #E4EBFE - Secondary Foreground */
+  --silver-muted: 178 198 250;      /* #B2C6FA - Muted Foreground */
+  --silver-shine: 254 253 254;      /* #FEFDFE */
+  --silver-dark: 1 22 80;           /* #011650 - High-Contrast Ink on Volt */
+
+  /* =========================================================================
+   * 4. STATUS ACCENTS
+   * ========================================================================= */
+  --status-success: 199 252 2;      /* #C7FC02 */
+  --status-warning: 199 252 2;      /* #C7FC02 */
+  --status-error: 255 107 107;      /* #FF6B6B */
+
+  /* =========================================================================
+   * 5. HAIRLINE BORDERS (Required format: rgba(...))
+   * ========================================================================= */
+  --ocean-card-border: rgba(254, 253, 254, 0.16);
+  --ocean-card-glow: rgba(199, 252, 2, 0.12);
+  --royal-blue-glow: rgba(199, 252, 2, 0.2);
+  --royal-blue-tint: rgba(254, 253, 254, 0.08);
+  --cerulean-glow: rgba(199, 252, 2, 0.18);
+  --cerulean-tint: rgba(199, 252, 2, 0.12);
+  --silver-border: rgba(254, 253, 254, 0.18);
+  --silver-hairline: rgba(254, 253, 254, 0.14);
+  --silver-glow: rgba(254, 253, 254, 0.05);
+  --cantaloupe-glow: rgba(199, 252, 2, 0.25);
+
+  /* =========================================================================
+   * 6. TYPOGRAPHY: FRAUNCES (HEADINGS) + FAMILJEN GROTESK (BODY)
+   * ========================================================================= */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'Familjen Grotesk', 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+}
+
